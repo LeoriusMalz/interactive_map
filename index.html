@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">                                                                                      <!-- кодировка -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">                                      <!-- отображение на мобильных устройствах -->
+    <title>Интерактивная карта</title>                                                                          <!-- название страницы -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />                           <!-- подключение стилей из библиотеки -->
+    <!-- <link rel="stylesheet" href="dist/attention.css"> -->
+    <link rel="stylesheet" href="styles.css">                                                                   <!-- подключение пользовательских стилей -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>                                     <!-- подключение скриптов из библиотеки -->
+    <!-- Плагин для вращения маркеров -->
+    <script src="https://unpkg.com/leaflet-rotatedmarker@0.2.0/leaflet.rotatedMarker.js"></script>
+
+    <!-- Плагин для вращения изображений -->
+    <script src="dist/Leaflet.ImageOverlay.Rotated.js"></script>
+</head>
+<body>
+    <div id="sidebar">                                                                                          <!-- боковая панель -->
+        <button id="locate-btn">📍 Найти меня</button>
+        <div id="distance-panel">
+            Расстояние до цели: <span id="distance-value">-</span> км
+        </div>
+
+        <!-- <div id="controls">
+            <div class="slider-container">
+                <label>Южная граница (lat):</label>
+                <input type="range" id="south-slider" min="55.92" max="55.94" step="0.000001" value="55.925780">
+                <span id="south-value">55.925780</span>
+            </div>
+            <div class="slider-container">
+                <label>Северная граница (lat):</label>
+                <input type="range" id="north-slider" min="55.92" max="55.94" step="0.000001" value="55.935356">
+                <span id="north-value">55.935381</span>
+            </div>
+            <div class="slider-container">
+                <label>Западная граница (lng):</label>
+                <input type="range" id="west-slider" min="37.51" max="37.53" step="0.000001" value="37.514727">
+                <span id="west-value">37.515237</span>
+            </div>
+            <div class="slider-container">
+                <label>Восточная граница (lng):</label>
+                <input type="range" id="east-slider" min="37.51" max="37.53" step="0.000001" value="37.523696">
+                <span id="east-value">37.523770</span>
+            </div>
+        </div> -->
+
+        <h2>Поиск и фильтры</h2>
+        <input type="text" id="search" placeholder="Введите название...">                                       <!-- поле Поиска -->
+        <div id="categories">                                                                                   <!-- панель категорий -->
+            <h3>Категории</h3>
+            <label><input type="checkbox" class="category-checkbox" value="кофейня" checked> Кофейни</label>           <!-- включить/выключить категорию -->
+            <label><input type="checkbox" class="category-checkbox" value="столовая" checked> Столовые/Буфеты</label>
+            <label><input type="checkbox" class="category-checkbox" value="корпус" checked> Корпуса</label>
+            <label><input type="checkbox" class="category-checkbox" value="park" checked> Парки</label>
+        </div>
+    </div>
+    <div id="map"></div>                                                                                        <!-- карта местности -->
+    <!-- <div id="rotation-controls">
+        <button id="rotate-left">↻ Повернуть влево</button>
+        <button id="rotate-right">↺ Повернуть вправо</button>
+        <button id="reset-rotation">Сбросить поворот</button>
+        <span>Угол: <span id="rotation-angle">0°</span></span>
+    </div> -->
+    <div id="compass-ring">
+        <div id="compass-handle">↑</div>
+        <div id="compass-degrees">0°</div>
+        <div class="compass-mark" style="margin-top: -60px; padding-top: 10px; transform: rotate(0deg)">N</div>
+        <div class="compass-mark" style="margin-right: 60px; padding-top: 5px; transform: rotate(0deg)">E</div>
+        <div class="compass-mark" style="margin-bottom: -60px;  transform: rotate(0deg)">S</div>
+        <div class="compass-mark" style="margin-left: 60px; padding-top: 5px; transform: rotate(0deg)">W</div>
+    </div>
+
+    
+    <script src="script.js"></script>                                                                           <!-- подключение пользовательских скриптов -->
+</body>
+</html>
