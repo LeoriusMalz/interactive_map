@@ -15,34 +15,56 @@
     <script src="/static/dist/Leaflet.ImageOverlay.Rotated.js"></script>
 </head>
 <body>
-    <div id="sidebar">                                                                                          <!-- боковая панель -->
+    <div id="sidebar" style="display: inline;">                                                                                          <!-- боковая панель -->
         <button id="locate-btn">📍 Найти меня</button>
         <div id="distance-panel">
             Расстояние до цели: <span id="distance-value">-</span> км
         </div>
 
-        <!-- <div id="controls">
+        <!-- 
+        <div>
+        <div id="controls">
             <div class="slider-container">
                 <label>Южная граница (lat):</label>
-                <input type="range" id="south-slider" min="55.92" max="55.94" step="0.000001" value="55.925780">
-                <span id="south-value">55.925780</span>
+                <input type="range" id="south-slider" min="55.92" max="55.94" step="0.000001" value="55.925281">
+                <span id="south-value">55.925281</span>
             </div>
             <div class="slider-container">
                 <label>Северная граница (lat):</label>
-                <input type="range" id="north-slider" min="55.92" max="55.94" step="0.000001" value="55.935356">
-                <span id="north-value">55.935381</span>
+                <input type="range" id="north-slider" min="55.92" max="55.94" step="0.000001" value="55.935026">
+                <span id="north-value">55.935026</span>
             </div>
             <div class="slider-container">
                 <label>Западная граница (lng):</label>
-                <input type="range" id="west-slider" min="37.51" max="37.53" step="0.000001" value="37.514727">
-                <span id="west-value">37.515237</span>
+                <input type="range" id="west-slider" min="37.51" max="37.53" step="0.000001" value="37.516948">
+                <span id="west-value">37.516948</span>
             </div>
             <div class="slider-container">
                 <label>Восточная граница (lng):</label>
-                <input type="range" id="east-slider" min="37.51" max="37.53" step="0.000001" value="37.523696">
-                <span id="east-value">37.523770</span>
+                <input type="range" id="east-slider" min="37.51" max="37.53" step="0.000001" value="37.524594">
+                <span id="east-value">37.524594</span>
             </div>
         </div> -->
+
+        <button id="editing-button">Редактирование</button>
+        <div id="edit-menu" style="display: none;">
+            <input id="pin-name" type="text" name="name" placeholder="Название метки" required>
+            <input id="pin-desc" type="text" name="desc" placeholder="Описание метки">
+            <input id="pin-category" type="text" name="category" placeholder="Категория" required>
+            <button id="pin-create">Создать метку</button>
+
+            <table id="markers-table">
+                <thead>
+                    <th scope="col">ID</th>
+                    <th scope="col">Имя</th>
+                    <th scope="col">Описание</th>
+                    <th scope="col">Категория</th>
+                </thead>
+                <tbody>
+                    
+                </tbody>
+            </table>
+        </div>
 
         <h2>Поиск и фильтры</h2>
         <input type="text" id="search" placeholder="Введите название...">                                       <!-- поле Поиска -->
@@ -54,7 +76,13 @@
             <label><input type="checkbox" class="category-checkbox" value="park" checked> Парки</label>
         </div>
     </div>
+    <div id="sidebar-button" style="display: flex; align-items: center; font-size: 15px;">
+        <
+    </div>
     <div id="map"></div>                                                                                        <!-- карта местности -->
+
+
+    
     <!-- <div id="rotation-controls">
         <button id="rotate-left">↻ Повернуть влево</button>
         <button id="rotate-right">↺ Повернуть вправо</button>

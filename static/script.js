@@ -2,8 +2,41 @@
 // 55.925780, 37.514727
 // 55.935356, 37.523696
 
+// NW - 55.934342, 37.514862
+// SW - 55.926050, 37.514807
+// NE - 55.934337, 37.526694
+
 let rotationAngle = 0; // Текущий угол поворота
 // let rotatedImage; // Для хранения rotated overlay
+
+const markerElements = [];                                                                                                  // Массив с маркерами для отображения
+
+function addMarker(coords, name, desc, category) {
+    switch (category) {
+        case "кофейня": htmlAlt = '<div class="rotating-marker" style="text-shadow: 0 0 10px rgba(0,0,0,0.2);">☕</div>'; break;
+        case "столовая": htmlAlt = '<div class="rotating-marker" style="text-shadow: 0 0 10px rgba(0,0,0,0.2);">🍽️</div>'; break;
+        case "корпус": htmlAlt = name; break;
+        default: htmlAlt = '📌';
+    }
+
+    const markerElement = L.marker(coords, {                                                              // Создание маркера для отображения
+        icon: L.divIcon({                                                                                                   // Иконка для маркера
+            className: `marker-${category}`,
+            html: htmlAlt,
+            iconSize: [30, 30]
+        }),
+        zIndexOffset: 100,
+        draggable: true
+    }).addTo(map);
+
+    markerElement.bindPopup(`<b>${name}</b><br>${desc}<br>Категория: ${category}`);                                      // Всплывающее окно с информацией о маркере
+    markerElements.push({                                                                                                   // Добавление маркера в массив
+        element: markerElement,
+        name: name.toLowerCase(),
+        category: category,
+        coords: coords
+    });
+}
 
 function rotatePoint(lat, lng, centerLat, centerLng, angle) {
     const radians = angle * Math.PI / 180;
@@ -29,7 +62,9 @@ function rotateMap(angle) {
     rotationAngle = angle;
 
     if (angle == 0) {
-        rotatedImage.reposition(northWest, northEast, southWest);
+        rotatedImage.reposition(rotatePoint(northWest[0], northWest[1], initPoint[0], initPoint[1], -15), 
+            rotatePoint(northEast[0], northEast[1], initPoint[0], initPoint[1], -15), 
+            rotatePoint(southWest[0], southWest[1], initPoint[0], initPoint[1], -15));
         map.setView(initPoint);
 
         markerElements.forEach(markerElement => {
@@ -42,9 +77,9 @@ function rotateMap(angle) {
     }
 
     let center = map.getCenter();
-    newSouthWest = rotatePoint(southWest[0], southWest[1], center.lat, center.lng, angle);
-    newNorthEast = rotatePoint(northEast[0], northEast[1], center.lat, center.lng, angle);
-    newNorthWest = rotatePoint(northWest[0], northWest[1], center.lat, center.lng, angle);
+    newSouthWest = rotatePoint(southWest[0], southWest[1], center.lat, center.lng, angle-15);
+    newNorthEast = rotatePoint(northEast[0], northEast[1], center.lat, center.lng, angle-15);
+    newNorthWest = rotatePoint(northWest[0], northWest[1], center.lat, center.lng, angle-15);
 
     rotatedImage.reposition(newNorthWest, newNorthEast, newSouthWest);
 
@@ -53,6 +88,8 @@ function rotateMap(angle) {
 
         marker.element.setLatLng(rotatePoint(marker.coords[0], marker.coords[1], center.lat, center.lng, angle));
     });
+
+    // userMarker.setLatLng(rotatePoint(userCoords[0], userCoords[1], center.lat, center.lng, angle));
 
     // Обновляем угол маркеров (пример для userMarker)
     // if (userMarker) {
@@ -66,9 +103,18 @@ function rotateMap(angle) {
 // const southWest = [55.925780, 37.523696]; 
 // const northEast = [55.935356, 37.514727];
 
-var southWest = [55.925780, 37.514727];
-var northEast = [55.935356, 37.523696];
-var northWest = [55.935356, 37.514727];
+// var southWest = [55.925780, 37.514727];
+// var northEast = [55.935356, 37.523696];
+// var northWest = [55.935356, 37.514727];
+
+var southWest = [55.926050, 37.514807];
+var northEast = [55.934337, 37.526694];
+var northWest = [55.934342, 37.514862];
+
+// var southWest = [55.925630, 37.514807];
+// var northEast = [55.934787, 37.526694];
+// var northWest = [55.934792, 37.514862];
+
 const initPoint = [(Math.max(northEast[0], northWest[0])+southWest[0])/2, (Math.min(southWest[1], northWest[1])+northEast[1])/2];
 
 const nwDiag = Math.sqrt((northWest[0]-initPoint[0])*(northWest[0]-initPoint[0]) + (northWest[1]-initPoint[1])*(northWest[1]-initPoint[1]));
@@ -84,16 +130,16 @@ const map = L.map('map',
                 ).setView(initPoint, 17.2);                                            // Начальный вид
 
 // Загрузка карты
-const imageUrl = 'static/data/map3.png';                                                                                                // Загрузка файла карты
+const imageUrl = 'static/data/map 2.png';                                                                                                // Загрузка файла карты
 const imageBounds = [southWest, northEast];                                                       // Границы карты
 // L.imageOverlay(imageUrl, imageBounds).addTo(map);
 
 // Добавление ПОВОРАЧИВАЕМОГО изображения (замените на ваш URL)
 var rotatedImage = L.imageOverlay.rotated(
     imageUrl,
-    northWest, // Юго-восток
-    northEast,
-    southWest
+    rotatePoint(northWest[0], northWest[1], initPoint[0], initPoint[1], -15), // Юго-восток
+    rotatePoint(northEast[0], northEast[1], initPoint[0], initPoint[1], -15),
+    rotatePoint(southWest[0], southWest[1], initPoint[0], initPoint[1], -15)
 ).addTo(map);
 
 // var rotatedImage2 = L.imageOverlay.rotated(
@@ -104,65 +150,70 @@ var rotatedImage = L.imageOverlay.rotated(
 //     {opacity: 0.5}
 // ).addTo(map);
 
-const compass = document.getElementById('compass-ring');
-const compassDegrees = document.getElementById('compass-degrees');
-let isDragging = false;
-let startAngle = 0;
-let currentRotation = 0;
+// ------------------------------------------| КОМПАС |--------------------------------------------
 
-// Начальные координаты центра компаса
-const compassRect = compass.getBoundingClientRect();
-const centerX = compassRect.left + compassRect.width / 2;
-const centerY = compassRect.top + compassRect.height / 2;
-startAngle = 0;
+// const compass = document.getElementById('compass-ring');
+// const compassDegrees = document.getElementById('compass-degrees');
+// let isDragging = false;
+// let startAngle = 0;
+// let currentRotation = 0;
 
-// Обработчики событий
-compass.addEventListener('mousedown', (e) => {
-    isDragging = true;
-    // console.log(Math.atan2(
-    //     e.clientY - centerY,
-    //     e.clientX - centerX
-    // ) * 180 / Math.PI);
-    // startAngle = angle + Math.atan2(
-    //     e.clientY - centerY,
-    //     e.clientX - centerX
-    // ) * 180 / Math.PI;
-    compass.style.cursor = 'grabbing';
-});
+// // Начальные координаты центра компаса
+// const compassRect = compass.getBoundingClientRect();
+// const centerX = compassRect.left + compassRect.width / 2;
+// const centerY = compassRect.top + compassRect.height / 2;
+// startAngle = 0;
 
-compassDegrees.addEventListener('mousedown', (e) => {
-    updateCompass(0);
-});
+// // Обработчики событий
+// compass.addEventListener('mousedown', (e) => {
+//     isDragging = true;
+//     // console.log(Math.atan2(
+//     //     e.clientY - centerY,
+//     //     e.clientX - centerX
+//     // ) * 180 / Math.PI);
+//     // startAngle = angle + Math.atan2(
+//     //     e.clientY - centerY,
+//     //     e.clientX - centerX
+//     // ) * 180 / Math.PI;
+//     compass.style.cursor = 'grabbing';
+// });
 
-document.addEventListener('mousemove', (e) => {
-    if (!isDragging) return;
+// compassDegrees.addEventListener('mousedown', (e) => {
+//     updateCompass(0);
+// });
+
+// document.addEventListener('mousemove', (e) => {
+//     if (!isDragging) return;
     
-    const angle = Math.atan2(
-        e.clientY - centerY,
-        e.clientX - centerX
-    ) * 180 / Math.PI;
+//     const angle = Math.atan2(
+//         e.clientY - centerY,
+//         e.clientX - centerX
+//     ) * 180 / Math.PI;
     
-    currentRotation = angle - startAngle + 90;
-    updateCompass(currentRotation);
-});
+//     currentRotation = angle - startAngle + 90;
+//     updateCompass(currentRotation);
+// });
 
-document.addEventListener('mouseup', () => {
-    isDragging = false;
-    compass.style.cursor = 'grab';
-});
+// document.addEventListener('mouseup', () => {
+//     isDragging = false;
+//     compass.style.cursor = 'grab';
+// });
 
-// Обновление компаса и карты
-function updateCompass(degrees) {
-    // Нормализуем угол (0-360)
-    degrees = (degrees % 360 + 360) % 360;
+// // Обновление компаса и карты
+// function updateCompass(degrees) {
+//     // Нормализуем угол (0-360)
+//     degrees = (degrees % 360 + 360) % 360;
     
-    // Вращаем кольцо
-    compass.style.transform = `rotate(${degrees}deg)`;
-    compassDegrees.textContent = `${Math.round(degrees)}°`;
+//     // Вращаем кольцо
+//     compass.style.transform = `rotate(${(degrees)%360}deg)`;
+//     compassDegrees.textContent = `${(Math.round(degrees))%360}°`;
     
-    // Поворачиваем карту (используем вашу функцию rotateMap)
-    rotateMap(degrees);
-};
+//     // Поворачиваем карту (используем вашу функцию rotateMap)
+//     rotateMap(degrees);
+// };
+
+// ------------------------------------------| КОНЕЦ КОМПАСА |--------------------------------------------
+
 
 // Обработчики кнопок
 // document.getElementById('rotate-left').addEventListener('click', () => {
@@ -178,36 +229,44 @@ function updateCompass(degrees) {
 // });
 
 
-// // Инициализация карты
+// Инициализация карты
 // let imageOverlay;
 
-// // Функция обновления границ
+// Функция обновления границ
 // function updateMapBounds() {
 //     const south = parseFloat(document.getElementById('south-slider').value);
 //     const north = parseFloat(document.getElementById('north-slider').value);
 //     const west = parseFloat(document.getElementById('west-slider').value);
 //     const east = parseFloat(document.getElementById('east-slider').value);
     
-//     const newBounds = [
-//         [south, west], // Юго-запад
-//         [north, east]  // Северо-восток
+//     newBounds = [
+//         rotatePoint(north, west, initPoint[0], initPoint[1], 15),
+//         rotatePoint(north, east, initPoint[0], initPoint[1], 15),
+//         rotatePoint(south, west, initPoint[0], initPoint[1], 15)
 //     ];
     
 //     // Обновляем или создаем imageOverlay
 //     if (imageOverlay) {
-//         imageOverlay.setBounds(newBounds);
+//         imageOverlay.reposition(newBounds[0], newBounds[1], newBounds[2]);
+//         // imageOverlay.setBounds([newBounds[2], newBounds[1]]);
 //     } else {
-//         imageOverlay = L.imageOverlay('map3.png', newBounds).addTo(map);
+//         imageOverlay = L.imageOverlay.rotated(
+//             'static/data/map 2.png',
+//             newBounds[0], // Юго-восток
+//             newBounds[1],
+//             newBounds[2]
+//         ).addTo(map);
+//         // imageOverlay = L.imageOverlay('static/data/map 2.png', newBounds).addTo(map);
 //     }
     
 //     // Обновляем отображаемые значения
-//     document.getElementById('south-value').textContent = south.toFixed(6);
-//     document.getElementById('north-value').textContent = north.toFixed(6);
-//     document.getElementById('west-value').textContent = west.toFixed(6);
-//     document.getElementById('east-value').textContent = east.toFixed(6);
+//     document.getElementById('south-value').textContent = newBounds[2][0].toFixed(6);
+//     document.getElementById('north-value').textContent = newBounds[1][0].toFixed(6);
+//     document.getElementById('west-value').textContent = newBounds[2][1].toFixed(6);
+//     document.getElementById('east-value').textContent = newBounds[1][1].toFixed(6);
 // }
 
-// // Назначаем обработчики для всех ползунков
+// Назначаем обработчики для всех ползунков
 // document.querySelectorAll('input[type="range"]').forEach(slider => {
 //     slider.addEventListener('input', updateMapBounds);
 // });
@@ -223,50 +282,86 @@ map.attributionControl.setPrefix('<a href="http://t.me/leoriusmalz">LeoriusMalz<
 const markers = [
     { coords: [55.929643, 37.520252], name: "Кофейня", desc: "НК, 2 этаж", category: "кофейня" },
     { coords: [55.929589, 37.520536], name: "Кофейня-буфет", desc: "НК, 2 этаж", category: "столовая" },
-    { coords: [55.928997, 37.521459], name: "Столовая", desc: "КПМ, 2 этаж", category: "столовая" },
-    { coords: [55.929056, 37.518324], name: "Кафе «Теория»", desc: "Цифра, -1 этаж", category: "столовая" },
-    { coords: [55.928994, 37.517796], name: "Кофейня", desc: "Цифра, 2 этаж", category: "кофейня" },
+    { coords: [55.928981, 37.521500], name: "Столовая", desc: "КПМ, 2 этаж", category: "столовая" },
+    { coords: [55.929043, 37.518316], name: "Кафе «Теория»", desc: "Цифра, -1 этаж", category: "столовая" },
+    { coords: [55.929001, 37.517782], name: "Кофейня", desc: "Цифра, 2 этаж", category: "кофейня" },
     { coords: [55.929508, 37.519114], name: "Буфет", desc: "ГК, 2 этаж", category: "столовая" },
-    { coords: [55.929240, 37.517486], name: "Кофейня Даблби", desc: "ГК, 2 этаж", category: "кофейня" },
+    { coords: [55.929253, 37.517461], name: "Кофейня Даблби", desc: "ГК, 2 этаж", category: "кофейня" },
 
     { coords: [55.929419, 37.518245], name: "ГК", desc: "Главный корпус", category: "корпус" },
     { coords: [55.929102, 37.518539], name: "УЛК-1", desc: "Физтех.Цифра", category: "корпус" },
-    { coords: [55.928317, 37.517952], name: "УЛК-2", desc: "Физтех.Арктика", category: "корпус" },
-    { coords: [55.930170, 37.518238], name: "ЛК", desc: "Лабораторный корпус", category: "корпус" },
-    { coords: [55.929848, 37.516214], name: "РТК", desc: "Радиотехнический корпус", category: "корпус" },
+    { coords: [55.928326, 37.518115], name: "УЛК-2", desc: "Физтех.Арктика", category: "корпус" },
+    { coords: [55.930185, 37.518224], name: "ЛК", desc: "Лабораторный корпус", category: "корпус" },
+    { coords: [55.929870, 37.516212], name: "РТК", desc: "Радиотехнический корпус", category: "корпус" },
     { coords: [55.929707, 37.515773], name: "БФК", desc: "Физтех.Био / Биофармацевтический корпус", category: "корпус" },
-    { coords: [55.929204, 37.520668], name: "НК", desc: "Физтех.Квант / Новый корпус / Корпус микроэлектроники", category: "корпус" },
+    { coords: [55.929183, 37.520619], name: "НК", desc: "Физтех.Квант / Новый корпус / Корпус микроэлектроники", category: "корпус" },
     { coords: [55.928670, 37.521619], name: "КПМ", desc: "Корпус прикладной математики", category: "корпус" },
+    { coords: [55.927416, 37.518266], name: "ВУЦ", desc: "Военно-учебный центр", category: "корпус" },
 
     // { lat: 55.929299, lng: 37.517427, name: "Центральный парк", category: "park" }
 ];
 
 // Добавление маркеров на карту
-const markerElements = [];                                                                                                  // Массив с маркерами для отображения
 markers.forEach(marker => {                                                                                                 // Проход по всем маркерам
-    switch (marker.category) {
-        case "кофейня": htmlAlt = '<div class="rotating-marker" style="text-shadow: 0 0 10px rgba(0,0,0,0.2);">☕</div>'; break;
-        case "столовая": htmlAlt = '<div class="rotating-marker" style="text-shadow: 0 0 10px rgba(0,0,0,0.2);">🍽️</div>'; break;
-        case "корпус": htmlAlt = marker.name; break;
-        default: htmlAlt = '📌';
+    addMarker(marker.coords, marker.name, marker.desc, marker.category);
+});
+
+document.getElementById('editing-button').addEventListener('click', () => {
+    const editingMenu = document.getElementById('edit-menu');
+
+    switch (editingMenu.style.display) {
+        case "none":
+            editingMenu.style.display = "inline";
+            markerElements.forEach(markerElement => {
+                marker = markerElement.element;
+                marker.dragging.enable();
+            });
+            break;
+        default: 
+            editingMenu.style.display = "none";
+            markerElements.forEach(markerElement => {
+                marker = markerElement.element;
+                marker.dragging.disable();
+            });
     }
+});
 
-    const markerElement = L.marker(marker.coords, {                                                              // Создание маркера для отображения
-        icon: L.divIcon({                                                                                                   // Иконка для маркера
-            className: `marker-${marker.category}`,
-            html: htmlAlt,
-            iconSize: [30, 30]
-        }),
-        zIndexOffset: 100
-    }).addTo(map);
+const tbody = document.querySelector('#markers-table tbody');
+tbody.innerHTML = '';
+let ID = 0
 
-    markerElement.bindPopup(`<b>${marker.name}</b><br>${marker.desc}<br>Категория: ${marker.category}`);                                      // Всплывающее окно с информацией о маркере
-    markerElements.push({                                                                                                   // Добавление маркера в массив
-        element: markerElement,
-        name: marker.name.toLowerCase(),
-        category: marker.category,
-        coords: marker.coords
-    });
+document.getElementById('pin-create').addEventListener('click', () => {
+    const pinName = document.getElementById('pin-name').value;
+    const pinDesc = document.getElementById('pin-desc').value;
+    const pinCategory = document.getElementById('pin-category').value;
+    const coords = map.getCenter();
+
+    addMarker(coords, pinName, pinDesc, pinCategory);
+    ID += 1;
+
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td>${ID}</td>
+        <td>${pinName}</td>
+        <td>${pinDesc}</td>
+        <td>${pinCategory}</td>
+    `;
+
+    tbody.appendChild(row);
+});
+
+document.getElementById('sidebar-button').addEventListener('mousedown', () => {
+    const sidebar = document.getElementById('sidebar');
+
+    switch (sidebar.style.display) {
+        case "inline": 
+            sidebar.style.display = "none"; 
+            document.getElementById('sidebar-button').textContent = ">";
+            break;
+        default: 
+            sidebar.style.display = "inline";
+            document.getElementById('sidebar-button').textContent = "<";
+    }
 });
 
 // Поиск по названию
@@ -306,6 +401,7 @@ function getDistance(lat1, lon1, lat2, lon2) {
 let watchId = null; // Для хранения ID отслеживания
 const locateBtn = document.getElementById('locate-btn');
 userMarker = null;
+userCoords = [0, 0];
 
 locateBtn.addEventListener('click', () => {
     if (!watchId) {
@@ -332,6 +428,7 @@ locateBtn.addEventListener('click', () => {
                 // Удаляем старый маркер
                 if (userMarker) map.removeLayer(userMarker);
 
+                userCoords = [lat, lng];
                 // Создаём новый маркер
                 userMarker = L.circleMarker([lat, lng], {
                     radius: 10,
