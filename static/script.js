@@ -9,14 +9,21 @@
 let rotationAngle = 0; // Текущий угол поворота
 // let rotatedImage; // Для хранения rotated overlay
 
-const markerElements = [];                                                                                                  // Массив с маркерами для отображения
+let markerElements = [];                                                                                                  // Массив с маркерами для отображения
 
-function addMarker(coords, name, desc, category) {
+// Отображаем метку на карте
+function addMarker(coords, name, desc, category, id) {
     switch (category) {
         case "кофейня": htmlAlt = '<div class="rotating-marker" style="text-shadow: 0 0 10px rgba(0,0,0,0.2);">☕</div>'; break;
         case "столовая": htmlAlt = '<div class="rotating-marker" style="text-shadow: 0 0 10px rgba(0,0,0,0.2);">🍽️</div>'; break;
         case "корпус": htmlAlt = name; break;
         default: htmlAlt = '📌';
+    }
+
+    if (document.getElementById('edit-menu').style.display == 'none') {
+        drag = false;
+    } else {
+        drag = true;
     }
 
     const markerElement = L.marker(coords, {                                                              // Создание маркера для отображения
@@ -26,16 +33,145 @@ function addMarker(coords, name, desc, category) {
             iconSize: [30, 30]
         }),
         zIndexOffset: 100,
-        draggable: true
+        draggable: drag
     }).addTo(map);
 
     markerElement.bindPopup(`<b>${name}</b><br>${desc}<br>Категория: ${category}`);                                      // Всплывающее окно с информацией о маркере
     markerElements.push({                                                                                                   // Добавление маркера в массив
         element: markerElement,
-        name: name.toLowerCase(),
-        category: category,
-        coords: coords
+        // name: name.toLowerCase(),
+        // category: category,
+        id: id
     });
+}
+
+// Очистка БД
+async function truncateTable() {
+    try {
+        const response = await fetch('/truncate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        const result = await response.json();
+        if (result.status === 'success') {
+            alert('База данных удалена!');
+            location.reload();
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        alert('Ошибка при удалении базы данных');
+    }
+}
+
+// Обновление координат меток в БД
+async function updateCoords(id, coords) {
+    coords = [coords.lat, coords.lng];
+
+    const response = await fetch('/update_coords', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({id, coords})
+    });
+}
+
+// Добавление метки в БД
+async function createMarker(coords, name, desc, category) {
+    if (!name || !category) {
+        alert('Заполните все поля!');
+        return;
+    }
+
+    try {
+        coords = [coords.lat, coords.lng];
+        const response = await fetch('/add_record', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({name, desc, category, coords})
+        });
+
+        const result = await response.json();
+        if (result.status === 'success') {
+            document.getElementById('pin-name').value = '';
+            document.getElementById('pin-desc').value = '';
+            document.getElementById('pin-category').value = '';
+
+            loadRecords();
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        alert('Ошибка при добавлении записи');
+    }
+};
+
+// Подгрузка меток из БД
+async function loadRecords() {
+    try {
+        const response = await fetch('/get_records');
+        const records = await response.json();
+        
+        const tbody = document.querySelector('#markers-table tbody');
+        tbody.innerHTML = '';
+
+        markerElements.forEach(markerElement => {
+            markerElement.element.remove();
+        });
+        markerElements = [];
+        
+        records.forEach(record => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${record['id']}</td>
+                <td>${record['name']}</td>
+                <td>${record['desc']}</td>
+                <td>${record['category']}</td>
+                <td><button class="delete-button" data-id="${record['id']}">Удалить</button></td>
+            `;
+            tbody.appendChild(row);
+
+            addMarker(record['coords'], record['name'], record['desc'], record['category'], record['id']);
+        });
+    } catch (error) {
+        console.error('Ошибка:', error);
+        alert('Ошибка при загрузке данных');
+    }
+}
+
+// Удаление метки
+async function deleteRecord(id) {
+    if (!confirm('Удалить запись?')) return;
+    
+    try {
+        markerElements.forEach(markerElement => {
+            marker = markerElement.element;
+            marker.dragging.disable();
+
+            updateCoords(markerElement.id, marker.getLatLng());
+        });
+
+        const response = await fetch('/delete_record', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({id: id})
+        });
+        
+        const result = await response.json();
+        if (result.status === 'success') {
+            alert('Запись удалена!');
+            loadRecords();
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        alert('Ошибка при удалении');
+    }
 }
 
 function rotatePoint(lat, lng, centerLat, centerLng, angle) {
@@ -279,56 +415,85 @@ map.attributionControl.setPrefix('<a href="http://t.me/leoriusmalz">LeoriusMalz<
 
 
 // Маркеры
-const markers = [
-    { coords: [55.929643, 37.520252], name: "Кофейня", desc: "НК, 2 этаж", category: "кофейня" },
-    { coords: [55.929589, 37.520536], name: "Кофейня-буфет", desc: "НК, 2 этаж", category: "столовая" },
-    { coords: [55.928981, 37.521500], name: "Столовая", desc: "КПМ, 2 этаж", category: "столовая" },
-    { coords: [55.929043, 37.518316], name: "Кафе «Теория»", desc: "Цифра, -1 этаж", category: "столовая" },
-    { coords: [55.929001, 37.517782], name: "Кофейня", desc: "Цифра, 2 этаж", category: "кофейня" },
-    { coords: [55.929508, 37.519114], name: "Буфет", desc: "ГК, 2 этаж", category: "столовая" },
-    { coords: [55.929253, 37.517461], name: "Кофейня Даблби", desc: "ГК, 2 этаж", category: "кофейня" },
+// const markers = [
+//     { coords: [55.929643, 37.520252], name: "Кофейня", desc: "НК, 2 этаж", category: "кофейня" },
+//     { coords: [55.929589, 37.520536], name: "Кофейня-буфет", desc: "НК, 2 этаж", category: "столовая" },
+//     { coords: [55.928981, 37.521500], name: "Столовая", desc: "КПМ, 2 этаж", category: "столовая" },
+//     { coords: [55.929043, 37.518316], name: "Кафе «Теория»", desc: "Цифра, -1 этаж", category: "столовая" },
+//     { coords: [55.929001, 37.517782], name: "Кофейня", desc: "Цифра, 2 этаж", category: "кофейня" },
+//     { coords: [55.929508, 37.519114], name: "Буфет", desc: "ГК, 2 этаж", category: "столовая" },
+//     { coords: [55.929253, 37.517461], name: "Кофейня Даблби", desc: "ГК, 2 этаж", category: "кофейня" },
 
-    { coords: [55.929419, 37.518245], name: "ГК", desc: "Главный корпус", category: "корпус" },
-    { coords: [55.929102, 37.518539], name: "УЛК-1", desc: "Физтех.Цифра", category: "корпус" },
-    { coords: [55.928326, 37.518115], name: "УЛК-2", desc: "Физтех.Арктика", category: "корпус" },
-    { coords: [55.930185, 37.518224], name: "ЛК", desc: "Лабораторный корпус", category: "корпус" },
-    { coords: [55.929870, 37.516212], name: "РТК", desc: "Радиотехнический корпус", category: "корпус" },
-    { coords: [55.929707, 37.515773], name: "БФК", desc: "Физтех.Био / Биофармацевтический корпус", category: "корпус" },
-    { coords: [55.929183, 37.520619], name: "НК", desc: "Физтех.Квант / Новый корпус / Корпус микроэлектроники", category: "корпус" },
-    { coords: [55.928670, 37.521619], name: "КПМ", desc: "Корпус прикладной математики", category: "корпус" },
-    { coords: [55.927416, 37.518266], name: "ВУЦ", desc: "Военно-учебный центр", category: "корпус" },
+//     { coords: [55.929419, 37.518245], name: "ГК", desc: "Главный корпус", category: "корпус" },
+//     { coords: [55.929102, 37.518539], name: "УЛК-1", desc: "Физтех.Цифра", category: "корпус" },
+//     { coords: [55.928326, 37.518115], name: "УЛК-2", desc: "Физтех.Арктика", category: "корпус" },
+//     { coords: [55.930185, 37.518224], name: "ЛК", desc: "Лабораторный корпус", category: "корпус" },
+//     { coords: [55.929870, 37.516212], name: "РТК", desc: "Радиотехнический корпус", category: "корпус" },
+//     { coords: [55.929707, 37.515773], name: "БФК", desc: "Физтех.Био / Биофармацевтический корпус", category: "корпус" },
+//     { coords: [55.929183, 37.520619], name: "НК", desc: "Физтех.Квант / Новый корпус / Корпус микроэлектроники", category: "корпус" },
+//     { coords: [55.928670, 37.521619], name: "КПМ", desc: "Корпус прикладной математики", category: "корпус" },
+//     { coords: [55.927416, 37.518266], name: "ВУЦ", desc: "Военно-учебный центр", category: "корпус" },
 
-    // { lat: 55.929299, lng: 37.517427, name: "Центральный парк", category: "park" }
-];
+//     // { lat: 55.929299, lng: 37.517427, name: "Центральный парк", category: "park" }
+// ];
 
-// Добавление маркеров на карту
-markers.forEach(marker => {                                                                                                 // Проход по всем маркерам
-    addMarker(marker.coords, marker.name, marker.desc, marker.category);
+// // Добавление маркеров на карту
+// markers.forEach(marker => {                                                                                                 // Проход по всем маркерам
+//     addMarker(marker.coords, marker.name, marker.desc, marker.category);
+// });
+
+
+//     addEventListener('click', () => {
+//     console.log(1);
+//     const id = this.getAttribute('data-id');
+//     console.log(id);
+//     deleteRecord(id);
+// });
+
+document.addEventListener('click', function(event) {
+    if (event.target.classList.contains('delete-button')) {
+        const id = event.target.getAttribute('data-id');
+        deleteRecord(id);
+    }
 });
+
 
 document.getElementById('editing-button').addEventListener('click', () => {
     const editingMenu = document.getElementById('edit-menu');
+    const truncateButton = document.getElementById('truncate-button');
 
     switch (editingMenu.style.display) {
         case "none":
             editingMenu.style.display = "inline";
+
             markerElements.forEach(markerElement => {
                 marker = markerElement.element;
                 marker.dragging.enable();
             });
+
+            truncateButton.disabled = false;
             break;
         default: 
             editingMenu.style.display = "none";
             markerElements.forEach(markerElement => {
                 marker = markerElement.element;
                 marker.dragging.disable();
+
+                updateCoords(markerElement.id, marker.getLatLng());
             });
+
+            truncateButton.disabled = true;
     }
 });
 
-const tbody = document.querySelector('#markers-table tbody');
-tbody.innerHTML = '';
-let ID = 0
+document.getElementById('truncate-button').addEventListener('click', () => {
+    if (confirm('❌ ВНИМАНИЕ!\n\nВы уверены, что хотите удалить ВСЮ базу данных?\nЭто действие нельзя отменить!')) {
+        if (confirm('Последнее предупреждение!\nВсе данные будут безвозвратно удалены!')) {
+            truncateTable();
+        }
+    }
+});
+
 
 document.getElementById('pin-create').addEventListener('click', () => {
     const pinName = document.getElementById('pin-name').value;
@@ -336,19 +501,14 @@ document.getElementById('pin-create').addEventListener('click', () => {
     const pinCategory = document.getElementById('pin-category').value;
     const coords = map.getCenter();
 
-    addMarker(coords, pinName, pinDesc, pinCategory);
-    ID += 1;
+    markerElements.forEach(markerElement => {
+        markerElement.element.dragging.disable();
+        updateCoords(markerElement.id, markerElement.element.getLatLng());
+    });
 
-    const row = document.createElement('tr');
-    row.innerHTML = `
-        <td>${ID}</td>
-        <td>${pinName}</td>
-        <td>${pinDesc}</td>
-        <td>${pinCategory}</td>
-    `;
-
-    tbody.appendChild(row);
+    createMarker(coords, pinName, pinDesc, pinCategory);
 });
+
 
 document.getElementById('sidebar-button').addEventListener('mousedown', () => {
     const sidebar = document.getElementById('sidebar');
@@ -460,4 +620,8 @@ locateBtn.addEventListener('click', () => {
         watchId = null;
         locateBtn.textContent = "📍 Найти меня";
     }
+});
+
+document.addEventListener('DOMContentLoaded', (event) => {
+    loadRecords();
 });
